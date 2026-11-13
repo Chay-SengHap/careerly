@@ -24,7 +24,7 @@ export default function Footer() {
 
             <div className="text-xs text-[#8A847C] space-y-1">
               <p>Cambodia Academy of Digital Technology (CADT)</p>
-              <p>Bridge 2, National Road 6A, Prek Leap, Chroy Changvar, Phnom Penh</p>
+              <p></p>
             </div>
           </div>
 
