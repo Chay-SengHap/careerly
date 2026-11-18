@@ -237,6 +237,10 @@ export const checkGrammar = async (req, res) => {
     if (process.env.GEMINI_API_KEY && ai && ai.models) {
       const systemPrompt = `You are an expert English grammar, spelling, and style editor for professional resumes.
 Fix all grammatical, punctuation, capitalization, and spelling mistakes in the text while maintaining the user's original voice.
+If the text is already grammatically correct and has NO mistakes:
+- Set "correctionsCount" to 0
+- Set "changes" to []
+- Set "correctedText" to the exact original text
 
 Respond ONLY with a valid JSON object in this exact format:
 {
