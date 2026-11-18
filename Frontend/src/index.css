@@ -259,3 +259,30 @@
 .prose u, .rich-text-content u {
   text-decoration: underline;
 }
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  /* Hide everything except the cloned resume */
+  body.printing-resume-active > *:not(#print-clone) {
+    display: none !important;
+  }
+
+  body.printing-resume-active #print-clone {
+    display: block !important;
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0;
+    padding: 0;
+    overflow: visible !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
