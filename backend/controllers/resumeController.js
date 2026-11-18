@@ -228,12 +228,37 @@ export const duplicateResume = async (req, res) => {
   }
 };
 
+// GET /api/resumes (or /api/users/resumes)
+export const getUserResumes = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const resumes = await resumeRepository.getUserResumes(userId);
+    return res.status(200).json({
+      message: "Resumes fetched successfully",
+      resumes: resumes || []
+    });
+  } catch (error) {
+    console.error("Error fetching user resumes:", error);
+    return res.status(400).json({
+      message: error.message
+    });
+  }
+};
+
 // PUT /api/resumes/update
 export const updateResume = async (req, res) => {
   try {
     const userId = req.userId;
     const { resumeId, resumeData, removeBackground } = req.body;
     const image = req.file;
+
+    // Verify ownership: a user can never change another user's CV
+    const existingResume = await resumeRepository.getResumeById(resumeId, userId);
+    if (!existingResume) {
+      return res.status(404).json({
+        message: "Resume not found or you are not authorized to edit it"
+      });
+    }
 
     const data = typeof resumeData === "string" ? JSON.parse(resumeData) : resumeData || {};
 
