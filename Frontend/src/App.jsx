@@ -123,6 +123,16 @@ export default function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
+  useEffect(() => {
+    if (location.pathname === '/' || location.pathname === '/about') {
+      document.title = 'Careerly — Build your CV. Find your job. Ace your interview.';
+    } else if (location.pathname.startsWith('/app/profile')) {
+      document.title = 'My Profile — Careerly';
+    } else if (location.pathname === '/app') {
+      document.title = 'Dashboard — Careerly';
+    }
+  }, [location.pathname]);
+
   const navigateToHome = () => {
     window.location.hash = '';
     navigate('/');
