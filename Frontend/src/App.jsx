@@ -19,6 +19,7 @@ import Dashboard from './pages/Dashboard';
 import ResumeBuilder from './pages/ResumeBuilder';
 import Preview from './pages/Preview';
 import Profile from './pages/Profile';
+import ResetPassword from './pages/ResetPassword';
 
 import api from './config/api';
 import { login, setLoading } from './app/features/authSlice';
@@ -155,6 +156,8 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<AuthPage initialMode="signin" onNavigateHome={navigateToHome} />} />
         <Route path="/signup" element={<AuthPage initialMode="signup" onNavigateHome={navigateToHome} />} />
+        <Route path="/reset-password" element={<ResetPassword key={location.hash} />} />
+        <Route path="/verify-email" element={<ResetPassword key={location.hash} verifyEmail />} />
         <Route path="/about" element={<Footer />} />
 
         {/* Dashboard and CV Builder Layout */}

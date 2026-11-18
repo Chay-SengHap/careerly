@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ============================================================
@@ -23,6 +24,22 @@ model User {
   jobs                Job[]
 
   @@map("users")
+}
+
+model PasswordReset {
+  email         String   @id @db.VarChar(255)
+  token_digest  String   @unique @db.VarChar(64)
+  expires_at    DateTime
+
+  @@map("password_resets")
+}
+
+model PendingSignup {
+  email         String   @id @db.VarChar(255)
+  token_digest  String   @unique @db.VarChar(64)
+  expires_at    DateTime
+
+  @@map("pending_signups")
 }
 
 // ============================================================
