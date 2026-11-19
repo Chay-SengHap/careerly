@@ -12,6 +12,7 @@ const Layout = () => {
   if (loading) {
     return <Loader />;
   }
+  
 
   // Allow access to the CV Builder without requiring login
   const isBuilderRoute = location.pathname.includes('/builder');

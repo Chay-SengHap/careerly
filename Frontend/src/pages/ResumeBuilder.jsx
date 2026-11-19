@@ -64,6 +64,7 @@ const defaultStarterResume = {
         '<p>• Built and optimized 4 responsive React dashboard modules, improving mobile load times by 32%.</p><p>• Collaborated with backend engineers to integrate RESTful APIs and ensure data consistency.</p>'
     }
   ],
+  
   education: [
     {
       institution: 'Cambodia Academy of Digital Technology (CADT)',
