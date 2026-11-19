@@ -548,3 +548,5 @@ Provide data in the following JSON format with no additional text before or afte
     return res.status(500).json({ message: error.message || "Failed to process and upload resume." });
   }
 };
+
+
