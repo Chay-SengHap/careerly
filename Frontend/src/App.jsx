@@ -160,6 +160,7 @@ export default function App() {
         {/* Dashboard and CV Builder Layout */}
         <Route path="app" element={<Layout />}>
           <Route index element={<Dashboard />} />
+          <Route path="my-cvs" element={<Dashboard />} />
           <Route path="builder/:resumeId" element={<ResumeBuilder />} />
           <Route path="builder" element={<ResumeBuilder />} />
           <Route path="profile" element={<Profile />} />

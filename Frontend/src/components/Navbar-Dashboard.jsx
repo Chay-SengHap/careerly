@@ -1,13 +1,16 @@
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { logout } from '../app/features/authSlice';
-import { User, LogOut, LogIn } from 'lucide-react';
+import { User, LogOut, LogIn, FileText } from 'lucide-react';
 
 const NavbarDashboard = () => {
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isMyCVsActive = location.pathname === '/app' || location.pathname === '/app/my-cvs';
 
   const handleNavigation = (to, e) => {
     if (window.resumeBuilderDirty) {
@@ -47,13 +50,20 @@ const NavbarDashboard = () => {
           </Link>
 
           {user && (
-            <Link
-              to="/app"
-              onClick={(e) => handleNavigation('/app', e)}
-              className="hidden sm:inline-flex text-xs font-semibold uppercase tracking-wider text-[#5A554E] hover:text-[#F46200] transition-colors"
-            >
-              Dashboard
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                to="/app"
+                onClick={(e) => handleNavigation('/app', e)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all ${
+                  isMyCVsActive
+                    ? 'bg-[#FFF3EB] text-[#F46200] border border-[#FAD7C0]'
+                    : 'text-[#5A554E] hover:text-[#F46200] hover:bg-slate-50'
+                }`}
+              >
+                <FileText className="size-3.5" />
+                <span>My CVs</span>
+              </Link>
+            </div>
           )}
         </div>
 

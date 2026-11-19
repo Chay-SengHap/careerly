@@ -152,7 +152,7 @@ export default function Navbar() {
                   isScrolled ? 'px-4 py-2 text-xs sm:text-sm' : 'px-5 py-2.5 text-sm'
                 }`}
               >
-                <span>Go to Dashboard</span>
+                <span>My CVs</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             ) : (
@@ -228,7 +228,7 @@ export default function Navbar() {
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full inline-flex items-center justify-center py-2.5 rounded-full text-sm font-semibold text-white bg-[#F46200] hover:bg-[#DC5800] transition-colors shadow-xs"
               >
-                Go to Dashboard
+                Go to My CVs
               </Link>
             ) : (
               <>
