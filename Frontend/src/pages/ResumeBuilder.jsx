@@ -239,7 +239,7 @@ const ResumeBuilder = () => {
           };
           setResumeData(merged);
           setLastSavedData(JSON.parse(JSON.stringify(merged)));
-          document.title = merged.title || 'Careerly CV Builder';
+          document.title = merged.title ? `${merged.title} — Careerly` : 'Careerly CV Builder';
           return;
         } catch (e) {
           console.error('Failed to parse cached guest resume:', e);
@@ -247,7 +247,7 @@ const ResumeBuilder = () => {
       }
       setResumeData(defaultStarterResume);
       setLastSavedData(JSON.parse(JSON.stringify(defaultStarterResume)));
-      document.title = 'Careerly CV Builder (Free Mode)';
+      document.title = 'Careerly CV Builder';
       return;
     }
 
@@ -301,7 +301,7 @@ const ResumeBuilder = () => {
         setResumeData(mappedData);
         setLastSavedData(JSON.parse(JSON.stringify(mappedData)));
         localStorage.setItem('lastActiveResumeBuilder', `/app/builder/${resumeId}`);
-        document.title = dbResume.title || 'Careerly CV Builder';
+        document.title = dbResume.title ? `${dbResume.title} — Careerly` : 'Careerly CV Builder';
       }
     } catch (error) {
       console.error('Error loading resume details:', error);
@@ -310,6 +310,9 @@ const ResumeBuilder = () => {
 
   useEffect(() => {
     loadExistingResume();
+    return () => {
+      document.title = 'Careerly — Build your CV. Find your job. Ace your interview.';
+    };
   }, [resumeId, token]);
 
   useEffect(() => {
