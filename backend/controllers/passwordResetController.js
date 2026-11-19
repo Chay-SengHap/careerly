@@ -1,4 +1,4 @@
-import { mailConfigured, sendAccountEmail } from "../config/accountEmail.js";
+import { accountFrontendUrl, mailConfigured, sendAccountEmail } from "../config/accountEmail.js";
 import { createHash, randomBytes } from "node:crypto";
 import bcrypt from "bcrypt";
 import { Prisma } from "@prisma/client";
@@ -28,14 +28,9 @@ export async function requestPasswordReset(req, res) {
     return res.status(400).json({ message: "Enter a valid email address." });
   }
 
-  const { FRONTEND_URL } = process.env;
-  if (!FRONTEND_URL || !mailConfigured()) {
-    return res.status(503).json({ message: "Password reset email is currently unavailable." });
-  }
-
-  const frontend = URL.canParse(FRONTEND_URL) ? new URL(FRONTEND_URL) : null;
-  const localHttp = frontend?.protocol === "http:" && ["localhost", "127.0.0.1"].includes(frontend.hostname);
-  if (frontend?.protocol !== "https:" && !localHttp) {
+  const frontend = accountFrontendUrl();
+  if (!frontend || !mailConfigured()) {
+    console.error(frontend ? "Account email provider is not configured." : "Check FRONTEND_URL for account email links.");
     return res.status(503).json({ message: "Password reset email is currently unavailable." });
   }
 

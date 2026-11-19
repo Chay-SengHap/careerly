@@ -1,4 +1,4 @@
-import { mailConfigured, sendAccountEmail } from "../config/accountEmail.js";
+import { accountFrontendUrl, mailConfigured, sendAccountEmail } from "../config/accountEmail.js";
 import { createHash, randomBytes } from "node:crypto";
 import bcrypt from "bcrypt";
 import prisma from "../db/prisma.js";
@@ -14,10 +14,9 @@ export async function requestSignup(req, res) {
     return res.status(400).json({ message: "Enter a valid email address." });
   }
 
-  const { FRONTEND_URL } = process.env;
-  const frontend = URL.canParse(FRONTEND_URL ?? "") ? new URL(FRONTEND_URL) : null;
-  const localHttp = frontend?.protocol === "http:" && ["localhost", "127.0.0.1"].includes(frontend.hostname);
-  if (!mailConfigured() || (frontend?.protocol !== "https:" && !localHttp)) {
+  const frontend = accountFrontendUrl();
+  if (!frontend || !mailConfigured()) {
+    console.error(frontend ? "Account email provider is not configured." : "Check FRONTEND_URL for account email links.");
     return res.status(503).json({ message: "Signup email is currently unavailable." });
   }
 
@@ -33,7 +32,6 @@ export async function requestSignup(req, res) {
 
     const token = randomBytes(32).toString("hex");
     const tokenDigest = digest(token);
-    issuedDigest = tokenDigest;
     const now = Date.now();
     const expiresAt = new Date(now + lifetime);
     const nextAllowed = new Date(now + lifetime - cooldown);
@@ -48,6 +46,7 @@ export async function requestSignup(req, res) {
       return res.status(429).json({ message: "Please wait one minute before requesting another verification email." });
     }
 
+    issuedDigest = tokenDigest;
     const link = new URL("/verify-email", frontend);
     link.hash = new URLSearchParams({ token }).toString();
     const delivery = await sendAccountEmail({
@@ -71,6 +70,7 @@ export async function requestSignup(req, res) {
     console.error("Signup verification request failed:", error.message);
     if (issuedDigest) {
       await prisma.pendingSignup.deleteMany({ where: { token_digest: issuedDigest } }).catch(() => {});
+      return res.status(503).json({ message: "We couldn't send your verification email. Please try again later." });
     }
     return res.status(503).json({ message: "Signup is temporarily unavailable. Please try again shortly." });
   }
