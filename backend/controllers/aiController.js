@@ -68,6 +68,168 @@ async function extractFirstJpegFromPdf(pdfBuffer) {
   return null;
 }
 
+
+// POST /api/ai/suggest-summary
+export const suggestProfessionalSummary = async (req, res) => {
+  try {
+    const { experience = [], skills = [], profession = "", currentSummary = "" } = req.body || {};
+
+    // 1. Sanitize summary hint & profession
+    const cleanSummaryInput = (currentSummary || "")
+      .replace(/<[^>]*>?/gm, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    const cleanProfession = (profession || "").trim();
+
+    // 2. Sanitize & validate experience
+    const cleanExperiences = Array.isArray(experience)
+      ? experience.filter((exp) => {
+          if (!exp || typeof exp !== "object") return false;
+          const pos = (exp.position || "").trim();
+          const comp = (exp.company || "").trim();
+          const desc = (exp.description || "").replace(/<[^>]*>?/gm, " ").trim();
+          return pos.length > 0 || comp.length > 0 || desc.length > 0;
+        })
+      : [];
+
+    // 3. Sanitize & validate skills
+    const cleanSkills = Array.isArray(skills)
+      ? skills
+          .map((s) => (typeof s === "string" ? s.trim() : (s?.name || "").trim()))
+          .filter((s) => s.length > 0)
+      : [];
+
+    const hasSummaryHint = cleanSummaryInput.length > 0;
+    const hasProfession = cleanProfession.length > 0;
+    const hasExperience = cleanExperiences.length > 0;
+    const hasSkills = cleanSkills.length > 0;
+
+    // Acceptance criterion: If user writes e.g. "Developer", AI should suggest without requiring skills or experience first.
+    // Only if user has literally provided NOTHING (no summary hint, no profession, no experience, no skills):
+    if (!hasSummaryHint && !hasProfession && !hasExperience && !hasSkills) {
+      return res.status(400).json({
+        success: false,
+        message: "Please write your target role (like 'Developer') or add your experience/skills first so AI can suggest a draft.",
+        missingFields: ["roleHint", "experience", "skills"]
+      });
+    }
+
+    // Determine target role from summary hint (e.g. "Developer"), profession, or experience
+    const targetRole = cleanSummaryInput || cleanProfession || cleanExperiences[0]?.position || "Developer";
+
+    // Build context strings from entered data if available
+    const experienceText = cleanExperiences
+      .map((exp) => {
+        const title = exp.position ? exp.position : "Role";
+        const company = exp.company ? ` at ${exp.company}` : "";
+        const dates = exp.start_date
+          ? ` (${exp.start_date} - ${exp.is_current ? "Present" : exp.end_date || "Present"})`
+          : "";
+        const cleanDesc = (exp.description || "")
+          .replace(/<[^>]*>?/gm, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        const snippet = cleanDesc ? ` [Contributions: ${cleanDesc.slice(0, 180)}]` : "";
+        return `- ${title}${company}${dates}${snippet}`;
+      })
+      .join("\n");
+
+    const skillsText = cleanSkills.join(", ");
+
+    // Call Gemini with fallback
+    if (process.env.GEMINI_API_KEY && ai && ai.models) {
+      const systemPrompt = `You are an expert resume writer and career coach.
+Your task is to generate a compelling, ATS-friendly professional summary (2 to 3 sentences, 40 to 70 words) for a job seeker's CV so they do not start from a blank page.
+
+User Context:
+- Target Role / Initial Thought: ${targetRole}
+- Profession: ${cleanProfession || "Not specified"}
+- Core Skills: ${skillsText || "Relevant industry best practices and core competencies for this role"}
+- Work Experience History:
+${experienceText || "No prior corporate experience listed yet (focus on domain competence, foundational capabilities, and eagerness to contribute)"}
+
+CRITICAL RULES:
+1. If the user only provided a role keyword or hint like "${targetRole}" without prior experience or skills:
+   - Provide an exemplary, inspiring summary for that specific role (highlighting core strengths, modern methodologies, problem-solving mindset, and professional commitment for that profession).
+   - Give them a strong starting draft/hint that they can accept or edit.
+2. If the user provided experience and skills, synthesize those specific details into the summary.
+3. Start with a strong professional identity and core strengths.
+4. Keep the tone confident, active, modern, and professional (avoid overused clichés like "hard worker").
+5. Output Format: Return ONLY clean HTML paragraph tags (e.g. <p>...</p>). Do not include markdown code fences, headers, or explanations.`;
+
+      try {
+        const response = await generateWithFallback({
+          contents: [systemPrompt],
+          config: {
+            systemInstruction:
+              "You are an expert resume writer. Generate only clean HTML paragraphs (<p>...</p>) for a professional resume summary. No markdown backticks."
+          }
+        });
+
+        let output = response.text?.trim() || "";
+        if (output.startsWith("```")) {
+          output = output.replace(/^```(html)?\s*/i, "").replace(/```$/, "").trim();
+        }
+        if (!output.startsWith("<p>")) {
+          output = `<p>${output}</p>`;
+        }
+
+        return res.status(200).json({
+          success: true,
+          summary: output,
+          dataSources: {
+            roleUsed: targetRole,
+            experiencesCount: cleanExperiences.length,
+            skillsCount: cleanSkills.length,
+            skillsUsed: cleanSkills.slice(0, 5),
+            rolesUsed: cleanExperiences.map((e) => e.position || e.company).filter(Boolean)
+          }
+        });
+      } catch (geminiError) {
+        console.warn("[AI] Gemini generation failed, using intelligent fallback:", geminiError.message);
+      }
+    }
+
+    // High quality intelligent fallback (works offline or without Gemini API key)
+    let fallbackOutput = "";
+    if (hasExperience) {
+      const topRole = cleanExperiences[0]?.position || targetRole;
+      const topCompany = cleanExperiences[0]?.company;
+      const companySnippet = topCompany ? ` with hands-on experience at ${topCompany}` : "";
+      const skillSnippet = cleanSkills.length > 0
+        ? ` and demonstrated proficiency in ${cleanSkills.slice(0, 4).join(", ")}`
+        : "";
+
+      fallbackOutput = `<p>Results-driven ${topRole}${companySnippet}${skillSnippet}. Proven track record of delivering clean, scalable solutions, collaborating across cross-functional teams, and driving measurable project outcomes.</p>`;
+    } else if (hasSkills) {
+      const skillSnippet = cleanSkills.slice(0, 5).join(", ");
+      fallbackOutput = `<p>Motivated and detail-oriented aspiring ${targetRole} with strong foundational expertise in ${skillSnippet}. Passionate about continuous learning, applying industry best practices, and contributing effectively to agile engineering teams.</p>`;
+    } else {
+      // User provided role hint (e.g. "Developer") without skills or experience yet
+      fallbackOutput = `<p>Motivated and detail-oriented ${targetRole} passionate about building scalable, high-quality solutions and continuous professional growth. Adept at problem-solving, applying modern industry standards, and collaborating with cross-functional teams to deliver impactful digital products.</p>`;
+    }
+
+    return res.status(200).json({
+      success: true,
+      summary: fallbackOutput,
+      dataSources: {
+        roleUsed: targetRole,
+        experiencesCount: cleanExperiences.length,
+        skillsCount: cleanSkills.length,
+        skillsUsed: cleanSkills.slice(0, 5),
+        rolesUsed: cleanExperiences.map((e) => e.position || e.company).filter(Boolean)
+      }
+    });
+  } catch (error) {
+    console.error("AI Summary Suggestion Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "An internal server error occurred while generating the summary."
+    });
+  }
+};
+
 // POST /api/ai/enchance-pro-sum
 export const enhanceProfessionalSumary = async (req, res) => {
   try {
