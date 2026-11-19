@@ -3,7 +3,7 @@ import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../../app/features/authSlice';
 import api from '../../config/api';
-import { Eye, EyeOff, ArrowLeft, Check, X, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Check, MailCheck, X, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
 
 // Google Official 4-Color SVG Icon
 export function GoogleIcon({ className = "h-5 w-5" }) {
@@ -348,7 +348,7 @@ export function SignUpPage({
       Create your <span className="font-serif italic font-normal text-[#F46200]">free account</span>
     </span>
   ),
-  description = "Join thousands of Cambodian students and graduates landing jobs with Careerly.",
+  description = "Enter your email to receive a link and finish creating your account.",
   heroImageSrc = defaultHeroImage,
   testimonials = defaultCareerlyTestimonials,
   onSignUp,
@@ -356,28 +356,8 @@ export function SignUpPage({
   onSignIn,
   onBackToHome,
 }) {
-  const [showPassword, setShowPassword] = useState(false);
-  const [selectedRole, setSelectedRole] = useState("student");
-  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-
-  // Simple password strength calculation
-  const getPasswordStrength = (pwd) => {
-    if (!pwd) return { label: "", percent: 0, color: "bg-gray-200" };
-    if (pwd.length < 6) return { label: "Too short", percent: 25, color: "bg-red-400" };
-    const hasNum = /\d/.test(pwd);
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pwd);
-    if (pwd.length >= 8 && hasNum && hasSpecial) {
-      return { label: "Strong", percent: 100, color: "bg-emerald-500" };
-    }
-    if (pwd.length >= 6) {
-      return { label: "Medium", percent: 65, color: "bg-amber-400" };
-    }
-    return { label: "Weak", percent: 40, color: "bg-red-400" };
-  };
-
-  const strength = getPasswordStrength(password);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -385,15 +365,7 @@ export function SignUpPage({
     setIsLoading(true);
 
     try {
-      if (onSignUp) {
-        await onSignUp(e);
-      } else {
-        const formData = new FormData(e.currentTarget);
-        const data = Object.fromEntries(formData.entries());
-        data.role = selectedRole;
-        console.log("Sign Up submitted:", data);
-        alert(`Account created successfully for ${data.fullName || "User"}! Welcome to Careerly.`);
-      }
+      await onSignUp(e);
     } catch (err) {
       setErrorMessage(err.message || "Failed to create account. Please try again.");
     } finally {
@@ -449,49 +421,6 @@ export function SignUpPage({
             )}
 
             <form className="space-y-4" onSubmit={handleSubmit}>
-              {/* Role Picker Pills */}
-              <div className="animate-element animate-delay-300">
-                <label className="block text-xs font-semibold text-[#5A554E] uppercase tracking-wider mb-2">
-                  I am a:
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { id: "student", label: "Student" },
-                    { id: "graduate", label: "Fresh Grad" },
-                    { id: "switcher", label: "Career Switcher" },
-                  ].map((role) => (
-                    <button
-                      key={role.id}
-                      type="button"
-                      onClick={() => setSelectedRole(role.id)}
-                      className={`py-2 px-2.5 rounded-xl text-xs font-medium border transition-all text-center cursor-pointer ${
-                        selectedRole === role.id
-                          ? "bg-[#FFF3EB] border-[#F46200] text-[#F46200] font-semibold ring-1 ring-[#F46200]"
-                          : "bg-white border-[#E7E2D8] text-[#5A554E] hover:border-[#D5CFC3]"
-                      }`}
-                    >
-                      {role.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Full Name */}
-              <div className="animate-element animate-delay-400">
-                <label className="block text-xs sm:text-sm font-medium text-[#5A554E] mb-1.5">
-                  Full Name
-                </label>
-                <GlassInputWrapper>
-                  <input
-                    name="fullName"
-                    type="text"
-                    required
-                    placeholder="e.g. Serey Vathana"
-                    className="w-full bg-transparent text-sm p-3.5 rounded-2xl text-[#2D2D2D] placeholder-[#8A847C] focus:outline-none"
-                  />
-                </GlassInputWrapper>
-              </div>
-
               {/* Email Address */}
               <div className="animate-element animate-delay-500">
                 <label className="block text-xs sm:text-sm font-medium text-[#5A554E] mb-1.5">
@@ -506,53 +435,6 @@ export function SignUpPage({
                     className="w-full bg-transparent text-sm p-3.5 rounded-2xl text-[#2D2D2D] placeholder-[#8A847C] focus:outline-none"
                   />
                 </GlassInputWrapper>
-              </div>
-
-              {/* Password */}
-              <div className="animate-element animate-delay-600">
-                <label className="block text-xs sm:text-sm font-medium text-[#5A554E] mb-1.5">
-                  Create Password
-                </label>
-                <GlassInputWrapper>
-                  <div className="relative">
-                    <input
-                      name="password"
-                      type={showPassword ? "text" : "password"}
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="At least 6 characters"
-                      className="w-full bg-transparent text-sm p-3.5 pr-12 rounded-2xl text-[#2D2D2D] placeholder-[#8A847C] focus:outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-3.5 flex items-center text-[#8A847C] hover:text-[#2D2D2D] transition-colors"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                </GlassInputWrapper>
-
-                {/* Password strength bar */}
-                {password && (
-                  <div className="mt-2 flex items-center gap-2">
-                    <div className="h-1.5 flex-1 bg-gray-200 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full transition-all duration-300 ${strength.color}`}
-                        style={{ width: `${strength.percent}%` }}
-                      />
-                    </div>
-                    <span className="text-[11px] font-medium text-[#5A554E]">
-                      {strength.label}
-                    </span>
-                  </div>
-                )}
               </div>
 
               {/* Terms checkbox */}
@@ -586,10 +468,10 @@ export function SignUpPage({
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Creating your account...</span>
+                    <span>Requesting link...</span>
                   </>
                 ) : (
-                  <span>Create Account</span>
+                  <span>Send verification link</span>
                 )}
               </button>
             </form>
@@ -664,8 +546,11 @@ export function AuthPage({
   onNavigateHome,
 }) {
   const [mode, setMode] = useState(initialMode); // 'signin' | 'signup' | 'reset'
+  const [signupAddress, setSignupAddress] = useState("");
   const [resetSent, setResetSent] = useState(false);
+  const [resetError, setResetError] = useState("");
   const [resetEmail, setResetEmail] = useState("");
+  const [isSendingReset, setIsSendingReset] = useState(false);
   const [toast, setToast] = useState(null); // { message: string, type: 'error' | 'success' | 'info' }
   const toastTimeoutRef = useRef(null);
 
@@ -721,26 +606,12 @@ export function AuthPage({
   };
 
   const handleSignUp = async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const data = Object.fromEntries(formData.entries());
+    const email = new FormData(e.currentTarget).get('email');
     try {
-      const res = await api.post('/api/users/register', {
-        name: data.fullName,
-        email: data.email,
-        password: data.password
-      });
-      localStorage.setItem('token', res.data.token);
-      if (dispatch) dispatch(login({ token: res.data.token, user: res.data.user }));
-      showToast(`Welcome to Careerly, ${data.fullName || 'User'}! Account created successfully.`, 'success');
-      setTimeout(() => {
-        if (navigate) navigate('/app');
-        else if (onNavigateHome) onNavigateHome();
-      }, 700);
-    } catch (err) {
-      const backendMessage = err?.response?.data?.message || err?.response?.data?.error;
-      const displayMessage = backendMessage || (err.message || 'Registration failed');
-      showToast(displayMessage, 'error');
+      await api.post('/api/users/register', { email });
+      setSignupAddress(email.trim());
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Could not request a verification link. Try again.');
     }
   };
 
@@ -754,10 +625,18 @@ export function AuthPage({
     }, 800);
   };
 
-  const handleResetPasswordSubmit = (e) => {
+  const handleResetPasswordSubmit = async (e) => {
     e.preventDefault();
-    setResetSent(true);
-    showToast(`Password reset link sent to ${resetEmail || "your email"}`, 'success');
+    setIsSendingReset(true);
+    setResetError("");
+    try {
+      await api.post("/api/users/forgot-password", { email: resetEmail.trim() });
+      setResetSent(true);
+    } catch (error) {
+      setResetError(error.response?.data?.message || "Could not reach Careerly. Try again.");
+    } finally {
+      setIsSendingReset(false);
+    }
   };
 
   return (
@@ -811,6 +690,7 @@ export function AuthPage({
           <div className="w-full max-w-md bg-white rounded-3xl p-8 sm:p-10 border border-[#E7E2D8] shadow-[0_20px_50px_rgba(0,0,0,0.06)]">
             <button
               type="button"
+              disabled={isSendingReset}
               onClick={() => {
                 setMode("signin");
                 setResetSent(false);
@@ -828,7 +708,7 @@ export function AuthPage({
                 </div>
                 <h2 className="text-2xl font-bold font-serif text-[#2D2D2D]">Check your inbox</h2>
                 <p className="text-sm text-[#5A554E] leading-relaxed">
-                  We've sent a password reset link to <strong className="text-[#2D2D2D]">{resetEmail}</strong>. Please check your spam folder if you don't see it within a couple minutes.
+                  If a Careerly account exists for <strong className="text-[#2D2D2D]">{resetEmail}</strong>, look for “Reset your Careerly password” in your inbox or spam folder. If you just signed up, finish creating your account from the verification email first.
                 </p>
                 <button
                   type="button"
@@ -851,14 +731,18 @@ export function AuthPage({
                 </p>
 
                 <form className="mt-6 space-y-4" onSubmit={handleResetPasswordSubmit}>
+                  {resetError && <p role="alert" className="text-sm text-red-700">{resetError}</p>}
                   <div>
-                    <label className="block text-xs font-medium text-[#5A554E] mb-1.5">
+                    <label htmlFor="reset-email" className="block text-xs font-medium text-[#5A554E] mb-1.5">
                       Email Address
                     </label>
                     <GlassInputWrapper>
                       <input
+                        id="reset-email"
                         type="email"
+                        autoComplete="email"
                         required
+                        disabled={isSendingReset}
                         value={resetEmail}
                         onChange={(e) => setResetEmail(e.target.value)}
                         placeholder="name@example.com"
@@ -869,15 +753,39 @@ export function AuthPage({
 
                   <button
                     type="submit"
-                    className="w-full py-3.5 rounded-2xl bg-[#F46200] hover:bg-[#DC5800] text-white font-semibold text-sm transition-all shadow-sm cursor-pointer"
+                    disabled={isSendingReset}
+                    className="w-full py-3.5 rounded-2xl bg-[#F46200] hover:bg-[#DC5800] text-white font-semibold text-sm transition-all shadow-sm cursor-pointer disabled:opacity-70"
                   >
-                    Send Reset Link
+                    {isSendingReset ? "Requesting link…" : "Send reset link"}
                   </button>
                 </form>
               </div>
             )}
           </div>
         </div>
+      ) : mode === "signup" && signupAddress ? (
+        <main className="grid min-h-dvh place-items-center bg-[#FAF8F4] px-4 py-10">
+          <section aria-labelledby="inbox-title" className="w-full max-w-lg overflow-hidden rounded-3xl border border-[#DED8CF] bg-white shadow-[0_18px_60px_-30px_rgba(58,37,18,.32)]">
+            <header className="relative overflow-hidden bg-[#292620] px-7 py-8 text-white sm:px-10">
+              <span className="text-sm font-bold tracking-tight">Careerly<span className="text-[#FF924A]">.</span></span>
+              <h1 id="inbox-title" className="relative z-10 mt-8 max-w-[72%] text-4xl font-semibold leading-none tracking-tight sm:text-5xl">
+                Check your <em className="block font-serif font-normal text-[#FFAA72]">inbox.</em>
+              </h1>
+              <MailCheck aria-hidden="true" strokeWidth={1.15} className="absolute right-6 bottom-7 size-16 -rotate-12 text-[#FFAA72] sm:right-10 sm:size-24" />
+            </header>
+            <div className="px-7 py-7 sm:px-10 sm:py-8">
+              <p role="status" className="text-sm leading-6 text-[#625A50]">
+                We sent a verification link to
+                <strong className="block break-all text-lg font-semibold text-[#292620]">{signupAddress}</strong>
+              </p>
+              <p className="mt-4 text-sm leading-6 text-[#625A50]">Open the link to finish creating your account. If you can’t find the email, check your spam folder.</p>
+              <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[#E7E2D8] pt-5 text-sm font-semibold">
+                <button type="button" className="cursor-pointer rounded-full bg-[#292620] px-5 py-3 text-white hover:bg-[#453E34] focus-visible:outline-2 focus-visible:outline-offset-2" onClick={() => setSignupAddress("")}>Try again or change email</button>
+                <button type="button" className="cursor-pointer rounded py-3 text-[#74401E] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2" onClick={() => { setSignupAddress(""); setMode("signin"); }}>Back to sign in</button>
+              </div>
+            </div>
+          </section>
+        </main>
       ) : mode === "signup" ? (
         <SignUpPage
           onSignIn={() => setMode("signin")}
@@ -888,7 +796,7 @@ export function AuthPage({
       ) : (
         <SignInPage
           onCreateAccount={() => setMode("signup")}
-          onResetPassword={() => setMode("reset")}
+          onResetPassword={() => { setResetError(""); setMode("reset"); }}
           onSignIn={handleSignIn}
           onGoogleSignIn={handleGoogleSignIn}
           onBackToHome={onNavigateHome}

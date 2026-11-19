@@ -3,6 +3,8 @@ import cors from "cors";
 import "dotenv/config";
 import path from "path";
 import prisma from "./db/prisma.js";
+import { ensureSignupTable } from "./db/ensureSignupTable.js";
+import { ensurePasswordResetTable } from "./db/ensurePasswordResetTable.js";
 import userRouter from "./routes/userRoute.js";
 import { resumeRouter } from "./routes/resumeRoute.js";
 import { aiRouter } from "./routes/aiRoute.js";
@@ -36,6 +38,12 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 async function startServer() {
   try {
     await prisma.$connect();
+    await ensureSignupTable().catch((error) => {
+      console.error("Signup table setup failed:", error.message);
+    });
+    await ensurePasswordResetTable().catch((error) => {
+      console.error("Password reset table setup failed:", error.message);
+    });
     console.log("✅ PostgreSQL Database connected successfully via Prisma");
 
     app.listen(PORT, () => {
