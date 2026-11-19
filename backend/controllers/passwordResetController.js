@@ -35,7 +35,7 @@ export async function requestPasswordReset(req, res) {
   }
 
   try {
-    await sendResetLink(email, new URL("/reset-password", frontend));
+    await sendResetLink(email, new URL("/", frontend));
     return res.json({ message: "If an account exists for that email, a reset link has been requested. Check your inbox and spam folder." });
   } catch (error) {
     console.error("Password reset request failed:", error.message);
@@ -73,7 +73,7 @@ async function sendResetLink(email, link) {
     throw error;
   }
 
-  link.hash = new URLSearchParams({ token }).toString();
+  link.hash = new URLSearchParams({ flow: "reset-password", token }).toString();
   try {
     const delivery = await sendAccountEmail({
       to: user.email,

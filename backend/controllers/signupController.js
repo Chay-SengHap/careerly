@@ -47,8 +47,8 @@ export async function requestSignup(req, res) {
     }
 
     issuedDigest = tokenDigest;
-    const link = new URL("/verify-email", frontend);
-    link.hash = new URLSearchParams({ token }).toString();
+    const link = new URL("/", frontend);
+    link.hash = new URLSearchParams({ flow: "verify-email", token }).toString();
     const delivery = await sendAccountEmail({
       to: email,
       subject: "Verify your Careerly email",
