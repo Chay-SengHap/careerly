@@ -532,24 +532,33 @@ const ResumeBuilder = () => {
   };
 
   const downloadResume = () => {
-    const previewEl = document.getElementById('resume-preview');
-    if (!previewEl) {
-      window.print();
-      return;
-    }
+  const previewEl = document.getElementById('resume-preview');
+  if (!previewEl) return window.print();
 
-    const clone = previewEl.cloneNode(true);
-    clone.id = 'print-clone';
-    document.body.appendChild(clone);
-    document.body.classList.add('printing-resume-active');
+  const originalTitle = document.title;
+  const name = resumeData.personal_info?.full_name;
+  document.title = name ? `${name} - CV` : 'CV';
 
-    setTimeout(() => {
-      window.print();
-      document.body.removeChild(clone);
-      document.body.classList.remove('printing-resume-active');
-    }, 100);
+  const clone = previewEl.cloneNode(true);
+  clone.id = 'print-clone';
+  document.body.appendChild(clone);
+  document.body.classList.add('printing-resume-active');
+
+  const cleanup = () => {
+    clone.remove();
+    document.body.classList.remove('printing-resume-active');
+    document.title = originalTitle;
+    window.removeEventListener('afterprint', cleanup);
   };
+  window.addEventListener('afterprint', cleanup);
 
+  toast('In the print dialog, choose "Save as PDF" and turn off "Headers and footers".', {
+    icon: '💡',
+    duration: 4000
+  });
+
+  setTimeout(() => window.print(), 100);
+};
   return (
     <>
       {/* Top Header Bar */}
