@@ -56,6 +56,7 @@ const defaultStarterResume = {
     {
       company: 'Canadia Bank Digital Lab',
       position: 'Frontend Developer Intern',
+      job_title: 'Frontend Developer Intern',
       start_date: '2023-07',
       end_date: '2023-12',
       is_current: false,
@@ -81,12 +82,12 @@ const defaultStarterResume = {
     }
   ],
   skills: [
-    'JavaScript (ES6+)',
-    'React.js',
-    'Tailwind CSS',
-    'HTML5 & CSS3',
-    'Git & GitHub',
-    'REST APIs'
+    { skill_name: 'JavaScript (ES6+)', proficiency: 'Intermediate' },
+    { skill_name: 'React.js', proficiency: 'Intermediate' },
+    { skill_name: 'Tailwind CSS', proficiency: 'Intermediate' },
+    { skill_name: 'HTML5 & CSS3', proficiency: 'Intermediate' },
+    { skill_name: 'Git & GitHub', proficiency: 'Intermediate' },
+    { skill_name: 'REST APIs', proficiency: 'Intermediate' }
   ],
   template: 'classic',
   accent_color: '#F46200',
@@ -238,7 +239,7 @@ const ResumeBuilder = () => {
           };
           setResumeData(merged);
           setLastSavedData(JSON.parse(JSON.stringify(merged)));
-          document.title = merged.title || 'Careerly CV Builder';
+          document.title = merged.title ? `${merged.title} — Careerly` : 'Careerly CV Builder';
           return;
         } catch (e) {
           console.error('Failed to parse cached guest resume:', e);
@@ -246,7 +247,7 @@ const ResumeBuilder = () => {
       }
       setResumeData(defaultStarterResume);
       setLastSavedData(JSON.parse(JSON.stringify(defaultStarterResume)));
-      document.title = 'Careerly CV Builder (Free Mode)';
+      document.title = 'Careerly CV Builder';
       return;
     }
 
@@ -264,10 +265,34 @@ const ResumeBuilder = () => {
           title: dbResume.title || 'Untitled Resume',
           personal_info: dbResume.personal_info || {},
           professional_summary: dbResume.professional_summary || '',
-          experience: dbResume.experiences || [],
-          education: dbResume.education || [],
-          project: dbResume.projects || [],
-          skills: dbResume.skills || [],
+          experience: (dbResume.experiences || []).map((exp) => ({
+            company: exp.company || '',
+            position:
+              typeof exp.position === 'string' && isNaN(Number(exp.position)) && exp.position !== ''
+                ? exp.position
+                : exp.job_title || exp.position || '',
+            job_title: exp.job_title || (typeof exp.position === 'string' ? exp.position : ''),
+            start_date: exp.start_date || '',
+            end_date: exp.end_date || '',
+            is_current: !!exp.is_current,
+            description: exp.description || ''
+          })),
+          education: (dbResume.education || []).map((edu) => ({
+            institution: edu.institution || '',
+            degree: edu.degree || '',
+            field: edu.field || '',
+            graduation_date: edu.graduation_date || '',
+            gpa: edu.gpa || ''
+          })),
+          project: (dbResume.projects || []).map((proj) => ({
+            name: proj.name || '',
+            type: proj.type || '',
+            description: proj.description || ''
+          })),
+          skills: (dbResume.skills || []).map((sk) => ({
+            skill_name: typeof sk === 'string' ? sk : sk.skill_name || '',
+            proficiency: (typeof sk === 'object' && sk.proficiency) || 'Intermediate'
+          })),
           template: dbResume.template || 'classic',
           accent_color: dbResume.accent_color || '#F46200',
           public: dbResume.is_public || false
@@ -276,7 +301,7 @@ const ResumeBuilder = () => {
         setResumeData(mappedData);
         setLastSavedData(JSON.parse(JSON.stringify(mappedData)));
         localStorage.setItem('lastActiveResumeBuilder', `/app/builder/${resumeId}`);
-        document.title = dbResume.title || 'Careerly CV Builder';
+        document.title = dbResume.title ? `${dbResume.title} — Careerly` : 'Careerly CV Builder';
       }
     } catch (error) {
       console.error('Error loading resume details:', error);
@@ -285,6 +310,9 @@ const ResumeBuilder = () => {
 
   useEffect(() => {
     loadExistingResume();
+    return () => {
+      document.title = 'Careerly — Build your CV. Find your job. Ace your interview.';
+    };
   }, [resumeId, token]);
 
   useEffect(() => {
@@ -333,7 +361,7 @@ const ResumeBuilder = () => {
 
   const saveResume = async () => {
     try {
-      if (isGuest) {
+      if (!token) {
         localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify(resumeData));
         setLastSavedData(JSON.parse(JSON.stringify(resumeData)));
         setSaveStatus('saved');
@@ -342,13 +370,32 @@ const ResumeBuilder = () => {
         return true;
       }
 
+      let targetResumeId = resumeId;
+      if (!targetResumeId || targetResumeId === 'guest' || targetResumeId === 'new' || targetResumeId === 'free') {
+        const { data: createData } = await api.post(
+          '/api/resumes/create',
+          { title: resumeData.title || 'Untitled CV', template: resumeData.template || 'classic' },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        targetResumeId = createData.resumeId || createData.resume.id;
+        navigate(`/app/builder/${targetResumeId}`, { replace: true });
+      }
+
       let updatedResumeData = structuredClone(resumeData);
       if (typeof resumeData.personal_info.image_url === 'object') {
         delete updatedResumeData.personal_info.image_url;
       }
 
+      if (Array.isArray(updatedResumeData.experience)) {
+        updatedResumeData.experience = updatedResumeData.experience.map((exp, idx) => ({
+          ...exp,
+          position: idx,
+          job_title: exp.job_title || exp.position || ''
+        }));
+      }
+
       const formData = new FormData();
-      formData.append('resumeId', resumeId);
+      formData.append('resumeId', targetResumeId);
       formData.append('resumeData', JSON.stringify(updatedResumeData));
       if (removeBackground) formData.append('removeBackground', 'yes');
       if (resumeData.personal_info.image_url instanceof File) {
@@ -366,10 +413,24 @@ const ResumeBuilder = () => {
         title: data.resume.title || resumeData.title,
         personal_info: data.resume.personal_info || {},
         professional_summary: data.resume.professional_summary || '',
-        experience: data.resume.experiences || [],
+        experience: (data.resume.experiences || []).map((exp) => ({
+          company: exp.company || '',
+          position:
+            typeof exp.position === 'string' && isNaN(Number(exp.position)) && exp.position !== ''
+              ? exp.position
+              : exp.job_title || exp.position || '',
+          job_title: exp.job_title || (typeof exp.position === 'string' ? exp.position : ''),
+          start_date: exp.start_date || '',
+          end_date: exp.end_date || '',
+          is_current: !!exp.is_current,
+          description: exp.description || ''
+        })),
         education: data.resume.education || [],
         project: data.resume.projects || [],
-        skills: data.resume.skills || [],
+        skills: (data.resume.skills || []).map((sk) => ({
+          skill_name: typeof sk === 'string' ? sk : sk.skill_name || '',
+          proficiency: (typeof sk === 'object' && sk.proficiency) || 'Intermediate'
+        })),
         template: data.resume.template || resumeData.template,
         accent_color: data.resume.accent_color || resumeData.accent_color,
         public: data.resume.is_public ?? resumeData.public
@@ -474,24 +535,33 @@ const ResumeBuilder = () => {
   };
 
   const downloadResume = () => {
-    const previewEl = document.getElementById('resume-preview');
-    if (!previewEl) {
-      window.print();
-      return;
-    }
+  const previewEl = document.getElementById('resume-preview');
+  if (!previewEl) return window.print();
 
-    const clone = previewEl.cloneNode(true);
-    clone.id = 'print-clone';
-    document.body.appendChild(clone);
-    document.body.classList.add('printing-resume-active');
+  const originalTitle = document.title;
+  const name = resumeData.personal_info?.full_name;
+  document.title = name ? `${name} - CV` : 'CV';
 
-    setTimeout(() => {
-      window.print();
-      document.body.removeChild(clone);
-      document.body.classList.remove('printing-resume-active');
-    }, 100);
+  const clone = previewEl.cloneNode(true);
+  clone.id = 'print-clone';
+  document.body.appendChild(clone);
+  document.body.classList.add('printing-resume-active');
+
+  const cleanup = () => {
+    clone.remove();
+    document.body.classList.remove('printing-resume-active');
+    document.title = originalTitle;
+    window.removeEventListener('afterprint', cleanup);
   };
+  window.addEventListener('afterprint', cleanup);
 
+  toast('In the print dialog, choose "Save as PDF" and turn off "Headers and footers".', {
+    icon: '💡',
+    duration: 4000
+  });
+
+  setTimeout(() => window.print(), 100);
+};
   return (
     <>
       {/* Top Header Bar */}
