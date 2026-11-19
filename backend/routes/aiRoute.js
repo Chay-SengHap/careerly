@@ -3,6 +3,7 @@ import { protect, optionalProtect } from "../middleware/authMiddleware.js";
 import {
   enhanceJobDescription,
   enhanceProfessionalSumary,
+  suggestProfessionalSummary,
   rewriteText,
   checkGrammar,
   uploadResume
@@ -11,6 +12,7 @@ import { upload } from "../config/multer.js";
 
 export const aiRouter = express.Router();
 
+aiRouter.post("/suggest-summary", optionalProtect, suggestProfessionalSummary);
 aiRouter.post("/enchance-pro-sum", optionalProtect, enhanceProfessionalSumary);
 aiRouter.post("/enhance-job-desc", optionalProtect, enhanceJobDescription);
 aiRouter.post("/rewrite", optionalProtect, rewriteText);

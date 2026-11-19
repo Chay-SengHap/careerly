@@ -312,7 +312,15 @@ const RichTextEditor = ({ value, onChange, placeholder, onGrammarCheck }) => {
         </div>
 
         {/* Editor Content Area */}
-        <div className="p-3 bg-white">
+        <div className="relative p-3 bg-white">
+          {(!value || value === '<p></p>' || value.replace(/<[^>]*>?/gm, '').trim() === '') && (
+            <div 
+              onClick={() => editor?.commands.focus()}
+              className="absolute top-3.5 left-3.5 right-3.5 text-xs sm:text-sm text-gray-400 select-none pointer-events-none italic leading-relaxed z-10"
+            >
+              {placeholder || 'Write here...'}
+            </div>
+          )}
           <EditorContent editor={editor} />
         </div>
       </div>

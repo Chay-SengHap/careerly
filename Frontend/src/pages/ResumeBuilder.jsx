@@ -785,6 +785,13 @@ const ResumeBuilder = () => {
                     data={resumeData.professional_summary || ''}
                     onChange={(data) => setResumeData((prev) => ({ ...prev, professional_summary: data }))}
                     setResumeData={setResumeData}
+                    experience={resumeData.experience || []}
+                    skills={resumeData.skills || []}
+                    profession={resumeData.personal_info?.profession || ''}
+                    onNavigateSection={(sectionId) => {
+                      const idx = sections.findIndex((s) => s.id === sectionId);
+                      if (idx !== -1) setActiveSectionIndex(idx);
+                    }}
                   />
                 )}
 
